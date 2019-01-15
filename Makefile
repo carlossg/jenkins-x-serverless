@@ -25,3 +25,7 @@ build: .build/cwp-cli-${CWP_VERSION}.jar
 	java -jar .build/cwp-cli-${CWP_VERSION}.jar \
 	     -configPath packager-config.yml \
 		 --batch-mode --installArtifacts
+	# delete big files that are not needed
+	rm -rf \
+		tmp/output/jenkinsfileRunner/repo/org/jenkins-ci/main/jenkins-war \
+		tmp/output/jenkinsfileRunner/repo/org/jenkins-ci/main/jenkins-core

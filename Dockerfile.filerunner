@@ -1,11 +1,29 @@
-FROM jenkins/jenkins:2.150.1
+FROM jenkins/jenkins:2.150.1 as jenkins
 USER root
 ENV CWP_VERSION 1.0-SNAPSHOT
 ADD tmp/output/target/jenkins-x-serverless-${CWP_VERSION}.war /usr/share/jenkins/jenkins.war
 RUN mkdir /app && unzip /usr/share/jenkins/jenkins.war -d /app/jenkins
 COPY tmp/output/jenkinsfileRunner /app
-RUN chmod +x /app/bin/jenkinsfile-runner && mkdir -p /usr/share/jenkins/ref/plugins
+RUN chmod +x /app/bin/jenkinsfile-runner && mkdir -p /usr/share/jenkins/ref/plugins  && \
+  rm -rf /app/jenkins/scripts /app/jenkins/jsbundles /app/jenkins/css /app/jenkins/images /app/jenkins/help /app/jenkins/WEB-INF/detached-plugins /app/jenkins/winstone.jar /app/jenkins/WEB-INF/jenkins-cli.jar /app/jenkins/WEB-INF/lib/jna-4.5.2.jar
 COPY tmp/output/plugins /usr/share/jenkins/ref/plugins
+
+FROM openjdk:8-jdk
+RUN mkdir -p /app /usr/share/jenkins/ref/plugins
+
+# we don't need all the repo
+COPY --from=jenkins /app/jenkins /app/jenkins
+COPY --from=jenkins /app/bin /app/bin
+COPY --from=jenkins /app/repo/io/jenkins/jenkinsfile-runner-bootstrap /app/repo/io/jenkins/jenkinsfile-runner-bootstrap
+COPY --from=jenkins /app/repo/io/jenkins/jenkinsfile-runner-setup /app/repo/io/jenkins/jenkinsfile-runner-setup
+COPY --from=jenkins /app/repo/args4j /app/repo/args4j
+COPY --from=jenkins /app/repo/org/eclipse/jetty /app/repo/org/eclipse/jetty
+COPY --from=jenkins /app/repo/javax/servlet /app/repo/javax/servlet
+COPY --from=jenkins /app/repo/org/jenkins-ci/main/jenkins-test-harness /app/repo/org/jenkins-ci/main/jenkins-test-harness
+COPY --from=jenkins /app/repo/org/jenkins-ci/main/jenkins-test-harness-htmlunit /app/repo/org/jenkins-ci/main/jenkins-test-harness-htmlunit
+COPY --from=jenkins /app/repo/xml-apis/xml-apis /app/repo/xml-apis/xml-apis
+
+COPY --from=jenkins /usr/share/jenkins/ref/plugins /usr/share/jenkins/ref/plugins
 
 ENTRYPOINT ["/app/bin/jenkinsfile-runner", \
             "-w", "/app/jenkins",\
